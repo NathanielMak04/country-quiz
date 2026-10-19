@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Country Quiz</title>
+<meta name="theme-color" content="#93d8e8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Country Quiz">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- HOME -->
+<main id="view-home" class="view">
+  <header class="topbar wrap">
+    <button class="pillbtn" id="open-records" type="button">My records</button>
+  </header>
+
+  <section class="wrap hero">
+    <h1>Name every country on Earth!</h1>
+    <p>Type a country and its borders fill in. Pick the whole world or one continent at a time.</p>
+  </section>
+
+  <section class="wrap">
+    <div class="card settings" aria-labelledby="settings-title">
+      <h2 id="settings-title" class="card-title">Game options</h2>
+      <div class="setting">
+        <span class="setting-label" id="timer-label">Timer</span>
+        <div class="seg" role="radiogroup" aria-labelledby="timer-label" id="timer-seg">
+          <button type="button" role="radio" data-timer="none">No timer</button>
+          <button type="button" role="radio" data-timer="up">Count up</button>
+          <button type="button" role="radio" data-timer="down">Countdown</button>
+        </div>
+        <label class="select-wrap" id="minutes-wrap">
+          <span class="sr-only">Countdown length</span>
+          <select id="minutes">
+            <option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option>
+            <option value="20">20 min</option><option value="30">30 min</option><option value="45">45 min</option>
+          </select>
+        </label>
+      </div>
+      <div class="setting">
+        <label class="check"><input type="checkbox" id="forgiving"><span>Forgive small typos</span></label>
+        <label class="check"><input type="checkbox" id="fly"><span>Fly the map to each answer</span></label>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <h2 class="section-title">Choose a quiz</h2>
+    <div class="quiz-grid" id="quiz-grid"></div>
+  </section>
+
+  <footer class="wrap foot">Borders: Natural Earth (public domain). Your records stay in this browser only.</footer>
+</main>
+
+<!-- PLAY -->
+<main id="view-play" class="view" hidden>
+  <div class="wrap play-wrap">
+    <header class="gamebar">
+      <button class="sqbtn" id="play-back" type="button" aria-label="Leave this quiz">
+        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M16 4L7 13l9 9" fill="none" stroke="#4B6479" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1 class="play-title" id="play-title">World</h1>
+      <div class="spacer"></div>
+      <div class="pill clock" id="clock" hidden>
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 7.5V12l3 2M8.5 2h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span id="clock-text">00:00</span>
+      </div>
+      <button class="pillbtn" id="btn-pause" type="button">Pause</button>
+      <button class="pillbtn danger" id="btn-giveup" type="button">Give up</button>
+    </header>
+
+    <div class="answer-row">
+      <label class="sr-only" for="answer">Type a country name</label>
+      <input id="answer" type="text" placeholder="Type a country…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="pill counter"><b id="count-found">0</b><span id="count-total">/ 0</span></div>
+    </div>
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+    <div class="play-grid">
+      <div class="play-main">
+        <div class="map-tile">
+          <div class="map-host" id="map"></div>
+          <div class="map-controls">
+            <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+            <button type="button" id="zoom-out" aria-label="Zoom out">&minus;</button>
+            <button type="button" id="zoom-fit" aria-label="Show the whole quiz map">
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 6V2h4M12 2h4v4M16 12v4h-4M6 16H2v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <button type="button" class="region-back" id="region-back" hidden>&larr; Full map</button>
+          <div class="region-name" id="region-name" hidden></div>
+          <div class="paused" id="paused" hidden>
+            <h2>Paused</h2>
+            <p>The map is hidden while the clock is stopped.</p>
+            <button class="btn" id="btn-resume" type="button">Resume</button>
+          </div>
+        </div>
+
+        <div class="legend play-legend">
+          <span><i class="pin"></i>Tiny country still to find</span>
+          <span><i class="pin done"></i>Found</span>
+          <span class="muted">Zoom maps below show every tiny country, already enlarged.</span>
+        </div>
+
+        <section id="insets-section" hidden>
+          <div class="row-head"><h2 class="section-title small">Zoom maps</h2><span class="muted">Each <b>?</b> is a country you haven't named yet. Click a map to open it big.</span></div>
+          <div class="insets" id="insets"></div>
+        </section>
+      </div>
+
+      <aside class="side card">
+        <div id="side-progress">
+          <h2 class="card-title">By continent</h2>
+          <div class="bars" id="bars"></div>
+        </div>
+        <div id="found-wrap">
+          <h2 class="card-title" id="found-title">Found so far</h2>
+          <ul class="found-list" id="found-list"></ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<!-- RESULTS -->
+<main id="view-results" class="view" hidden>
+  <div class="wrap narrow">
+    <header class="gamebar">
+      <button class="sqbtn" id="res-back" type="button" aria-label="Back to all quizzes">
+        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M16 4L7 13l9 9" fill="none" stroke="#4B6479" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </header>
+
+    <h1 class="result-title" id="res-title">Well done!</h1>
+    <p class="result-sub" id="res-sub"></p>
+    <div class="pills" id="res-pills"></div>
+
+    <div class="map-tile">
+      <div class="map-host" id="res-map"></div>
+      <div class="map-controls">
+        <button type="button" id="res-zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" id="res-zoom-out" aria-label="Zoom out">&minus;</button>
+        <button type="button" id="res-zoom-fit" aria-label="Show the whole quiz map">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 6V2h4M12 2h4v4M16 12v4h-4M6 16H2v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="legend"><span><i class="sw ok"></i>Got it</span><span><i class="sw miss"></i>Missed</span><span class="muted">Click a name to find it on the map</span></div>
+
+    <div class="tabs" role="tablist" aria-label="Filter the list" id="res-tabs">
+      <button type="button" role="tab" data-filter="all" aria-selected="true">All</button>
+      <button type="button" role="tab" data-filter="miss" aria-selected="false">Missed</button>
+      <button type="button" role="tab" data-filter="ok" aria-selected="false">Got it</button>
+    </div>
+    <div class="groups" id="res-groups"></div>
+
+    <div class="actions">
+      <button class="btn" id="btn-again" type="button">Play again</button>
+      <button class="btn secondary" id="btn-missed" type="button">Replay only the missed</button>
+      <button class="btn secondary" id="btn-home" type="button">All quizzes</button>
+    </div>
+  </div>
+</main>
+
+<!-- RECORDS -->
+<main id="view-records" class="view" hidden>
+  <div class="wrap narrow">
+    <header class="gamebar">
+      <button class="sqbtn" id="rec-back" type="button" aria-label="Back to all quizzes">
+        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M16 4L7 13l9 9" fill="none" stroke="#4B6479" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1 class="play-title left">My records</h1>
+    </header>
+    <p class="result-sub left" id="rec-summary"></p>
+    <div class="actions left">
+      <button class="btn secondary small" id="rec-best" type="button">Keep only my best run per quiz</button>
+      <button class="btn secondary small" id="rec-settings" type="button">Reset options</button>
+      <button class="btn danger small" id="rec-clear" type="button">Delete all records</button>
+    </div>
+    <div class="card" id="rec-card"></div>
+  </div>
+</main>
+
+<dialog id="dialog">
+  <form method="dialog">
+    <h2 id="dlg-title"></h2>
+    <p id="dlg-text"></p>
+    <div class="dlg-actions">
+      <button class="btn secondary small" value="cancel" id="dlg-cancel">Cancel</button>
+      <button class="btn small" value="ok" id="dlg-ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="tooltip" role="tooltip" hidden></div>
+
+<script src="js/countries.js"></script>
+<script src="js/shapes.js"></script>
+<script src="js/regions.js"></script>
+<script src="js/match.js"></script>
+<script src="js/store.js"></script>
+<script src="js/map.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
